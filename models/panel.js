@@ -17,7 +17,7 @@ const panelSchema = new Schema({
     default: 1,
     min: 1,
   },
-  type: {
+  typeId: {
     // Посилання на документ у колекції paneltypes
     type: Types.ObjectId,
     ref: "PanelType",

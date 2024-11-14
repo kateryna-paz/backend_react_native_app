@@ -5,7 +5,7 @@ const { PanelType } = require("../models/panelType");
 
 router.get(`/`, async (req, res) => {
   try {
-    const panelList = await Panel.find().populate("type");
+    const panelList = await Panel.find().populate("typeId");
 
     if (!panelList || panelList.length === 0) {
       return res
@@ -20,7 +20,7 @@ router.get(`/`, async (req, res) => {
 
 router.get(`/:id`, async (req, res) => {
   try {
-    const panel = await Panel.findById(req.params.id).populate("type");
+    const panel = await Panel.findById(req.params.id).populate("typeId");
 
     if (!panel) {
       return res
@@ -34,12 +34,12 @@ router.get(`/:id`, async (req, res) => {
 });
 
 router.post(`/`, async (req, res) => {
-  const type = await PanelType.findById(req.body.type);
+  const type = await PanelType.findById(req.body.typeId);
   if (!type) return res.status(404).json({ message: "Invalid type" });
   const panel = new Panel({
     square: req.body.square,
     number: req.body.number,
-    type: req.body.type,
+    typeId: req.body.typeId,
   });
 
   try {
@@ -53,11 +53,11 @@ router.post(`/`, async (req, res) => {
 router.put(`/:id`, async (req, res) => {
   try {
     const updatePanel = await Panel.findByIdAndUpdate(
-      req.body.id,
+      req.params.id,
       {
         square: req.body.square,
         number: req.body.number,
-        type: req.body.type,
+        typeId: req.body.typeId,
       },
       { new: true }
     );
@@ -70,6 +70,24 @@ router.put(`/:id`, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message, success: false });
   }
+});
+
+router.delete(`/:id`, async (req, res) => {
+  Panel.findByIdAndDelete(req.params.id)
+    .then((panel) => {
+      if (panel) {
+        return res
+          .status(200)
+          .json({ success: true, message: "The panel was deleted" });
+      } else {
+        return res
+          .status(404)
+          .json({ success: false, message: "Panel not found" });
+      }
+    })
+    .catch((error) => {
+      return res.status(500).json({ success: false, error: error });
+    });
 });
 
 module.exports = router;

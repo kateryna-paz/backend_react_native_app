@@ -26,13 +26,13 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    location: {
+    locationId: {
       // Посилання на документ у колекції locations
       type: Types.ObjectId,
       ref: "Location",
       required: true,
     },
-    solarPanelIds: [
+    panelIds: [
       {
         type: Types.ObjectId,
         ref: "Panel",

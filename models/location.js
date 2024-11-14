@@ -3,7 +3,7 @@ const { Schema, model, Types } = mongoose;
 
 // Location schema
 const locationSchema = new Schema({
-  region: {
+  regionId: {
     // Посилання на документ у колекції regions
     type: Types.ObjectId,
     ref: "Region",
