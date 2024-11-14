@@ -1,0 +1,21 @@
+{
+  "name": "solar-panels-app",
+  "version": "1.0.0",
+  "description": "backend of the solar panels app",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "mongodb": "^6.10.0",
+    "mongoose": "^8.8.0",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.1.7"
+  }
+}
