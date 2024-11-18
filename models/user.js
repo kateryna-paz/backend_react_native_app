@@ -49,4 +49,12 @@ const userSchema = new Schema(
   { versionKey: false }
 );
 
+userSchema.virtual("id").get(function () {
+  return this._id.toHexString();
+});
+
+userSchema.set("toJSON", {
+  virtuals: true,
+});
+
 exports.User = model("User", userSchema);

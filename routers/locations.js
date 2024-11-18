@@ -80,7 +80,7 @@ router.post(`/`, async (req, res) => {
 
   try {
     const createdLocation = await location.save();
-    res.status(201).json(createdLocation);
+    res.status(201).json(createdLocation._id);
   } catch (error) {
     res.status(500).json({ error: error.message, success: false });
   }

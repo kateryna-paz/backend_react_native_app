@@ -25,4 +25,12 @@ const panelSchema = new Schema({
   },
 });
 
+panelSchema.virtual("id").get(function () {
+  return this._id.toHexString();
+});
+
+panelSchema.set("toJSON", {
+  virtuals: true,
+});
+
 exports.Panel = model("Panel", panelSchema);

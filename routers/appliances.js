@@ -1,20 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const { Appliance } = require("../models/appliance");
+const User = require("../models/user");
 
 router.get(`/`, async (req, res) => {
   const applianceList = await Appliance.find();
-
-  if (!applianceList || applianceList.length === 0) {
-    return res
-      .status(404)
-      .json({ message: "Appliances not found", success: false });
-  }
-  res.status(200).send(applianceList);
-});
-
-router.get(`/names`, async (req, res) => {
-  const applianceList = await Appliance.find().select("name id");
 
   if (!applianceList || applianceList.length === 0) {
     return res
@@ -39,7 +29,11 @@ router.put("/:id", async (req, res) => {
   try {
     const appliance = await Appliance.findByIdAndUpdate(
       req.params.id,
-      { name: req.body.name, power: req.body.power },
+      {
+        name: req.body.name,
+        power: req.body.power,
+        importance: req.body.importance,
+      },
       { new: true }
     );
 
@@ -62,6 +56,7 @@ router.post(`/`, (req, res) => {
   const appliance = new Appliance({
     name: req.body.name,
     power: req.body.power,
+    importance: req.body.importance,
   });
   appliance
     .save()
@@ -73,22 +68,29 @@ router.post(`/`, (req, res) => {
     });
 });
 
-router.delete(`/:id`, (req, res) => {
-  Appliance.findByIdAndDelete(req.params.id)
-    .then((appliance) => {
-      if (appliance) {
-        return res
-          .status(200)
-          .json({ success: true, message: "The appliance was deleted" });
-      } else {
-        return res
-          .status(404)
-          .json({ success: false, message: "Appliance not found" });
-      }
-    })
-    .catch((error) => {
-      return res.status(500).json({ success: false, error: error });
+router.delete(`/:id`, async (req, res) => {
+  const applianceId = req.params.id;
+  try {
+    const appliance = await Appliance.findByIdAndDelete(applianceId);
+
+    if (!appliance) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Appliance not found" });
+    }
+
+    await User.updateOne(
+      { applianceIds: applianceId },
+      { $pull: { applianceIds: applianceId } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "The appliance was deleted and removed from user",
     });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 module.exports = router;

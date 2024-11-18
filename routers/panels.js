@@ -44,7 +44,7 @@ router.post(`/`, async (req, res) => {
 
   try {
     const createdPanel = await panel.save();
-    res.status(201).json(createdPanel);
+    res.status(201).json(createdPanel._id);
   } catch (error) {
     res.status(500).json({ error: error.message, success: false });
   }

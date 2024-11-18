@@ -34,4 +34,12 @@ const locationSchema = new Schema({
   },
 });
 
+locationSchema.virtual("id").get(function () {
+  return this._id.toHexString();
+});
+
+locationSchema.set("toJSON", {
+  virtuals: true,
+});
+
 exports.Location = model("Location", locationSchema);

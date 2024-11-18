@@ -19,4 +19,13 @@ const regionSchema = new Schema({
   },
 });
 
+regionSchema.virtual("id").get(function () {
+  return this._id.toHexString();
+});
+
+regionSchema.set("toJSON", {
+  virtuals: true,
+});
+
+
 exports.Region = model("Region", regionSchema);

@@ -4,6 +4,8 @@ const app = express();
 require("dotenv").config();
 const mongoose = require("mongoose");
 const cors = require("cors");
+const authJwt = require("./helpers/jwt");
+const errorHandler = require("./helpers/error-handler");
 
 app.use(cors());
 app.options("*", cors());
@@ -21,6 +23,8 @@ const panelTypesRouter = require("./routers/panelTypes");
 // Middleware
 app.use(express.json());
 app.use(morgan("tiny"));
+app.use(authJwt());
+app.use(errorHandler);
 
 // Routers
 app.use(`${api}/appliances`, appliancesRouter);

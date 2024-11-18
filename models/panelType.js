@@ -16,4 +16,12 @@ const panelTypeSchema = new Schema({
   },
 });
 
+panelTypeSchema.virtual("id").get(function () {
+  return this._id.toHexString();
+});
+
+panelTypeSchema.set("toJSON", {
+  virtuals: true,
+});
+
 exports.PanelType = model("PanelType", panelTypeSchema);
