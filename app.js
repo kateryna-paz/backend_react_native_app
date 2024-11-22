@@ -10,6 +10,7 @@ const errorHandler = require("./helpers/error-handler");
 app.use(cors());
 app.options("*", cors());
 
+const port = process.env.PORT || 4000;
 const api = process.env.API_URL;
 const mongoURI = process.env.MONGO_URI;
 
@@ -45,6 +46,6 @@ mongoose
     console.error("Error connecting to the database:", err);
   });
 
-app.listen(3000, () => {
-  console.log("Server is running http://localhost:3000");
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`);
 });
