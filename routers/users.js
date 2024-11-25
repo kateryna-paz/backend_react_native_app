@@ -131,9 +131,9 @@ router.post("/login", async (req, res) => {
 
   if (user && bcrypt.compareSync(req.body.password, user.passwordHash)) {
     const token = jwt.sign({ usedId: user.id }, secretOrPrivateKey, {
-      expiresIn: "1d",
+      expiresIn: "7d",
     });
-    return res.status(200).send(`User authenticated with the token: ${token}.`);
+    return res.status(200).send(`User authenticated with the token: ${token}`);
   } else {
     return res.status(400).send("Incorrect password");
   }

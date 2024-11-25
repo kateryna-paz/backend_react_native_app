@@ -11,7 +11,14 @@ function authJwt() {
     secret,
     algorithms: ["HS256"],
   }).unless({
-    path: [`${api}/users/login`, `${api}/users/register`],
+    path: [
+      `${api}/users/login`,
+      `${api}/users/register`,
+      `${api}/panels`,
+      `${api}/locations`,
+      `${api}/regions`,
+      `${api}/paneltypes`,
+    ],
   });
 }
 
