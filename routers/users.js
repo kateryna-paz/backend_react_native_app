@@ -6,6 +6,7 @@ const { Panel } = require("../models/panel");
 const { Appliance } = require("../models/appliance");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const validator = require("email-validator");
 
 const secretOrPrivateKey = process.env.JWT_SECRET;
 if (!secretOrPrivateKey) {
@@ -47,14 +48,26 @@ router.get(`/:id`, async (req, res) => {
     res.status(500).json({ error: error.message, success: false });
   }
 });
-
 router.post(`/register`, async (req, res) => {
   const { name, email, password, locationId, panelIds, applianceIds } =
     req.body;
 
+  if (!validator.validate(email)) {
+    return res.status(400).json({ message: "Invalid email" });
+  }
+
   try {
+    const userInDB = await User.findOne({ email: email });
+    if (userInDB) {
+      return res
+        .status(400)
+        .json({ message: "The user with this email already exists" });
+    }
+
     const location = await Location.findById(locationId);
-    if (!location) return res.status(404).json({ message: "Invalid location" });
+    if (!location) {
+      return res.status(404).json({ message: "Invalid location" });
+    }
 
     const appliances = await Appliance.find({ _id: { $in: applianceIds } });
     if (appliances.length !== applianceIds.length) {
@@ -81,9 +94,45 @@ router.post(`/register`, async (req, res) => {
     });
 
     const createdUser = await user.save();
-    res.status(201).json(createdUser);
+
+    const token = jwt.sign({ userId: createdUser.id }, secretOrPrivateKey, {
+      expiresIn: "7d",
+    });
+
+    res.status(201).json({
+      message: "Registration successful",
+      token: token,
+      user: createdUser,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message, success: false });
+  }
+});
+
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!validator.validate(email)) {
+    return res.status(400).json({ message: "Invalid email" });
+  }
+
+  const user = await User.findOne({ email: email });
+
+  if (!user) {
+    return res.status(404).send("The user not found");
+  }
+
+  if (user && bcrypt.compareSync(password, user.passwordHash)) {
+    const token = jwt.sign({ usedId: user.id }, secretOrPrivateKey, {
+      expiresIn: "7d",
+    });
+    return res.status(200).json({
+      message: "Authentication successful",
+      token: token,
+      user: user,
+    });
+  } else {
+    return res.status(400).send("Incorrect password");
   }
 });
 
@@ -119,23 +168,6 @@ router.put(`/:id`, async (req, res) => {
     res.status(200).send(updateUser);
   } catch (error) {
     res.status(500).json({ error: error.message, success: false });
-  }
-});
-
-router.post("/login", async (req, res) => {
-  const user = await User.findOne({ email: req.body.email });
-
-  if (!user) {
-    return res.status(404).send("The user not found");
-  }
-
-  if (user && bcrypt.compareSync(req.body.password, user.passwordHash)) {
-    const token = jwt.sign({ usedId: user.id }, secretOrPrivateKey, {
-      expiresIn: "7d",
-    });
-    return res.status(200).send(`User authenticated with the token: ${token}`);
-  } else {
-    return res.status(400).send("Incorrect password");
   }
 });
 
