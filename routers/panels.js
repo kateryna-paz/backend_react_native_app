@@ -50,6 +50,37 @@ router.post(`/`, async (req, res) => {
   }
 });
 
+router.post(`/batch`, async (req, res) => {
+  try {
+    const { panelIds } = req.body;
+
+    if (!Array.isArray(panelIds) || panelIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid array of panel IDs.",
+      });
+    }
+
+    const panels = await Panel.find({ _id: { $in: panelIds } }).populate(
+      "typeId"
+    );
+
+    if (panels.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No panels found for the provided IDs.",
+      });
+    }
+
+    res.status(200).json(panels);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 router.put(`/:id`, async (req, res) => {
   try {
     const updatePanel = await Panel.findByIdAndUpdate(

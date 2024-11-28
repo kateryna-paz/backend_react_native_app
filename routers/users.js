@@ -6,7 +6,31 @@ const { Panel } = require("../models/panel");
 const { Appliance } = require("../models/appliance");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const validator = require("email-validator");
+
+var emailRegex =
+  /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+
+function isEmailValid(email) {
+  if (!email) return false;
+
+  if (email.length > 254) return false;
+
+  var valid = emailRegex.test(email);
+  if (!valid) return false;
+
+  var parts = email.split("@");
+  if (parts[0].length > 64) return false;
+
+  var domainParts = parts[1].split(".");
+  if (
+    domainParts.some(function (part) {
+      return part.length > 63;
+    })
+  )
+    return false;
+
+  return true;
+}
 
 const secretOrPrivateKey = process.env.JWT_SECRET;
 if (!secretOrPrivateKey) {
@@ -52,7 +76,7 @@ router.post(`/register`, async (req, res) => {
   const { name, email, password, locationId, panelIds, applianceIds } =
     req.body;
 
-  if (!validator.validate(email)) {
+  if (!isEmailValid(email)) {
     return res.status(400).json({ message: "Invalid email" });
   }
 
@@ -112,7 +136,7 @@ router.post(`/register`, async (req, res) => {
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  if (!validator.validate(email)) {
+  if (!isEmailValid(email)) {
     return res.status(400).json({ message: "Invalid email" });
   }
 
