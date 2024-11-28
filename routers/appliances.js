@@ -3,69 +3,100 @@ const router = express.Router();
 const { Appliance } = require("../models/appliance");
 const User = require("../models/user");
 
-router.get(`/`, async (req, res) => {
-  const applianceList = await Appliance.find();
-
-  if (!applianceList || applianceList.length === 0) {
-    return res
-      .status(404)
-      .json({ message: "Appliances not found", success: false });
+router.get("/", async (req, res) => {
+  try {
+    const appliances = await Appliance.find();
+    if (!appliances.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No appliances found" });
+    }
+    res.status(200).json(appliances);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
-  res.status(200).send(applianceList);
 });
 
-router.get(`/:id`, async (req, res) => {
-  const appliance = await Appliance.findById(req.params.id);
-
-  if (!appliance) {
-    return res
-      .status(404)
-      .json({ message: "Appliance not found", success: false });
+router.get("/:id", async (req, res) => {
+  try {
+    const appliance = await Appliance.findById(req.params.id);
+    if (!appliance) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Appliance not found" });
+    }
+    res.status(200).json(appliance);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
-  res.status(200).send(appliance);
+});
+
+router.get("/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const appliances = await Appliance.find({ userId });
+
+    if (!appliances || appliances.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No appliances found for this user" });
+    }
+
+    res.status(200).json(appliances);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+});
+
+router.post("/", async (req, res) => {
+  try {
+    const { name, power, importance, userId } = req.body;
+
+    const newAppliance = new Appliance({
+      name,
+      power,
+      importance,
+      userId,
+    });
+
+    const savedAppliance = await newAppliance.save();
+    res.status(201).json(savedAppliance);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
 });
 
 router.put("/:id", async (req, res) => {
   try {
-    const appliance = await Appliance.findByIdAndUpdate(
+    const { name, power, importance } = req.body;
+
+    const updatedAppliance = await Appliance.findByIdAndUpdate(
       req.params.id,
-      {
-        name: req.body.name,
-        power: req.body.power,
-        importance: req.body.importance,
-      },
-      { new: true }
+      { name, power, importance },
+      { new: true, runValidators: true }
     );
 
-    if (!appliance) {
+    if (!updatedAppliance) {
       return res
         .status(404)
-        .json({ message: "Appliance not found", success: false });
+        .json({ success: false, message: "Appliance not found" });
     }
 
-    res.send(appliance);
+    res.status(200).json(updatedAppliance);
   } catch (error) {
-    console.error("Update error:", error);
     res
       .status(500)
-      .json({ message: "Server error", success: false, error: error.message });
+      .json({ success: false, message: "Server error", error: error.message });
   }
-});
-
-router.post(`/`, (req, res) => {
-  const appliance = new Appliance({
-    name: req.body.name,
-    power: req.body.power,
-    importance: req.body.importance,
-  });
-  appliance
-    .save()
-    .then((createdAppliance) => {
-      res.status(201).json(createdAppliance);
-    })
-    .catch((error) => {
-      res.status(500).json({ error: error, success: false });
-    });
 });
 
 router.delete(`/:id`, async (req, res) => {
@@ -79,14 +110,9 @@ router.delete(`/:id`, async (req, res) => {
         .json({ success: false, message: "Appliance not found" });
     }
 
-    await User.updateOne(
-      { applianceIds: applianceId },
-      { $pull: { applianceIds: applianceId } }
-    );
-
     return res.status(200).json({
       success: true,
-      message: "The appliance was deleted and removed from user",
+      message: "The appliance was removed",
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });

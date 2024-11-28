@@ -23,6 +23,12 @@ const panelSchema = new Schema({
     ref: "PanelType",
     required: true,
   },
+  userId: {
+    // Посилання на документ у колекції users
+    type: Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
 });
 
 panelSchema.virtual("id").get(function () {

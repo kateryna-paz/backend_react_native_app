@@ -3,131 +3,123 @@ const router = express.Router();
 const { Location } = require("../models/location");
 const { Region } = require("../models/region");
 
-router.get(`/`, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const locationList = await Location.find();
+    const locationList = await Location.find().populate("regionId");
 
-    if (!locationList || locationList.length === 0) {
+    if (!locationList.length) {
       return res
         .status(404)
-        .json({ message: "Locations not found", success: false });
+        .json({ success: false, message: "Locations not found" });
     }
-    res.send(locationList);
+
+    res.status(200).json(locationList);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-router.get(`/:id`, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const location = await Location.findById(req.params.id);
+    const location = await Location.findById(req.params.id).populate(
+      "regionId"
+    );
 
     if (!location) {
       return res
         .status(404)
-        .json({ message: "Location not found", success: false });
+        .json({ success: false, message: "Location not found" });
     }
-    res.send(location);
+
+    res.status(200).json(location);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-router.get(`/:id/coordinates`, async (req, res) => {
+router.get("/:userId", async (req, res) => {
   try {
-    const coordinates = await Location.findById(req.params.id).select(
-      "coordinates"
-    );
+    const { userId } = req.params;
 
-    if (!coordinates) {
+    const location = await Location.findOne({ userId });
+
+    if (!location) {
       return res
         .status(404)
-        .json({ message: "Location not found", success: false });
+        .json({ success: false, message: "No location found for this user" });
     }
-    res.send(coordinates);
+
+    res.status(200).json(location);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
-router.get(`/:id/dailyEnergy`, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const energy = await Location.findById(req.params.id).select(
-      "dailyEnergyProduced"
-    );
+    const { regionId, coordinates, dailyEnergyProduced, userId } = req.body;
 
-    if (!energy) {
+    const region = await Region.findById(regionId);
+    if (!region) {
       return res
         .status(404)
-        .json({ message: "Location not found", success: false });
+        .json({ success: false, message: "Invalid region" });
     }
-    res.send(energy);
-  } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
-  }
-});
 
-router.post(`/`, async (req, res) => {
-  const region = Region.findById(req.params.regionId);
-
-  if (!region) return res.status(404).json({ message: "Invalid region" });
-
-  const location = new Location({
-    regionId: req.body.regionId,
-    coordinates: req.body.coordinates,
-    dailyEnergyProduced: req.body.dailyEnergyProduced,
-  });
-
-  try {
+    const location = new Location({
+      regionId,
+      coordinates,
+      dailyEnergyProduced,
+      userId,
+    });
     const createdLocation = await location.save();
-    res.status(201).json(createdLocation._id);
+
+    res.status(201).json(createdLocation);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-router.put(`/:id`, async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
+    const { regionId, coordinates, dailyEnergyProduced } = req.body;
+
     const updatedLocation = await Location.findByIdAndUpdate(
       req.params.id,
-      {
-        regionId: req.body.regionId,
-        coordinates: req.body.coordinates,
-        dailyEnergyProduced: req.body.dailyEnergyProduced,
-      },
+      { regionId, coordinates, dailyEnergyProduced },
       { new: true }
-    );
+    ).populate("regionId userId");
 
     if (!updatedLocation) {
       return res
         .status(404)
-        .json({ message: "Location not found", success: false });
+        .json({ success: false, message: "Location not found" });
     }
-    res.send(updatedLocation);
+
+    res.status(200).json(updatedLocation);
   } catch (error) {
-    console.error("Update error:", error);
-    res
-      .status(500)
-      .json({ message: "Server error", success: false, error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-router.delete(`/:id`, async (req, res) => {
-  Location.findByIdAndDelete(req.params.id)
-    .then((location) => {
-      if (!location) {
-        return res
-          .status(404)
-          .json({ message: "Location not found", success: false });
-      } else {
-        return res
-          .status(200)
-          .json({ success: true, message: "The location was deleted" });
-      }
-    })
-    .catch((error) => {
-      return res.status(500).json({ success: false, error: error });
-    });
+router.delete("/:id", async (req, res) => {
+  try {
+    const deletedLocation = await Location.findByIdAndDelete(req.params.id);
+
+    if (!deletedLocation) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Location not found" });
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: "The location was deleted" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 module.exports = router;

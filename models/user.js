@@ -26,25 +26,6 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    locationId: {
-      // Посилання на документ у колекції locations
-      type: Types.ObjectId,
-      ref: "Location",
-      required: true,
-    },
-    panelIds: [
-      {
-        type: Types.ObjectId,
-        ref: "Panel",
-        required: true,
-      },
-    ], // Масив посиланнь на документ у колекції solar_panels
-    applianceIds: [
-      {
-        type: Types.ObjectId,
-        ref: "Appliance",
-      },
-    ], // Масив посилань на документи у колекції appliances
   },
   { versionKey: false }
 );

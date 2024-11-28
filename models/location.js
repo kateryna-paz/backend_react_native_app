@@ -9,6 +9,12 @@ const locationSchema = new Schema({
     ref: "Region",
     required: true,
   },
+  userId: {
+    // Посилання на документ у колекції users
+    type: Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   coordinates: {
     // Координати місця
     type: [Number],

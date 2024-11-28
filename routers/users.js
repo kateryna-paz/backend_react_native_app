@@ -11,22 +11,11 @@ var emailRegex =
   /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
 
 function isEmailValid(email) {
-  if (!email) return false;
+  if (!email || email.length > 254) return false;
+  if (!emailRegex.test(email)) return false;
 
-  if (email.length > 254) return false;
-
-  var valid = emailRegex.test(email);
-  if (!valid) return false;
-
-  var parts = email.split("@");
-  if (parts[0].length > 64) return false;
-
-  var domainParts = parts[1].split(".");
-  if (
-    domainParts.some(function (part) {
-      return part.length > 63;
-    })
-  )
+  const [local, domain] = email.split("@");
+  if (local.length > 64 || domain.split(".").some((part) => part.length > 63))
     return false;
 
   return true;
@@ -39,10 +28,7 @@ if (!secretOrPrivateKey) {
 
 router.get(`/`, async (req, res) => {
   try {
-    const userList = await User.find()
-      .select("-passwordHash")
-      .populate("locationId panelIds applianceIds")
-      .populate({ path: "locationId", populate: "regionId" });
+    const userList = await User.find().select("-passwordHash");
 
     if (!userList || userList.length === 0) {
       return res
@@ -57,10 +43,7 @@ router.get(`/`, async (req, res) => {
 
 router.get(`/:id`, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
-      .select("-passwordHash")
-      .populate("locationId panelIds applianceIds")
-      .populate({ path: "locationId", populate: "regionId" });
+    const user = await User.findById(req.params.id).select("-passwordHash");
 
     if (!user) {
       return res
@@ -73,8 +56,7 @@ router.get(`/:id`, async (req, res) => {
   }
 });
 router.post(`/register`, async (req, res) => {
-  const { name, email, password, locationId, panelIds, applianceIds } =
-    req.body;
+  const { name, email, password } = req.body;
 
   if (!isEmailValid(email)) {
     return res.status(400).json({ message: "Invalid email" });
@@ -84,25 +66,8 @@ router.post(`/register`, async (req, res) => {
     const userInDB = await User.findOne({ email: email });
     if (userInDB) {
       return res
-        .status(400)
+        .status(500)
         .json({ message: "The user with this email already exists" });
-    }
-
-    const location = await Location.findById(locationId);
-    if (!location) {
-      return res.status(404).json({ message: "Invalid location" });
-    }
-
-    const appliances = await Appliance.find({ _id: { $in: applianceIds } });
-    if (appliances.length !== applianceIds.length) {
-      return res
-        .status(404)
-        .json({ message: "One or more invalid appliances" });
-    }
-
-    const panels = await Panel.find({ _id: { $in: panelIds } });
-    if (panels.length !== panelIds.length) {
-      return res.status(404).json({ message: "One or more invalid panels" });
     }
 
     const saltRounds = 10;
@@ -112,9 +77,6 @@ router.post(`/register`, async (req, res) => {
       email: email,
       passwordHash: hashedPassword,
       name: name,
-      locationId: locationId,
-      panelIds: panelIds,
-      applianceIds: applianceIds,
     });
 
     const createdUser = await user.save();
@@ -161,16 +123,12 @@ router.post("/login", async (req, res) => {
 });
 
 router.put(`/:id`, async (req, res) => {
-  const { name, email, password, locationId, panelIds, applianceIds } =
-    req.body;
+  const { name, email, password } = req.body;
 
   try {
     const updateFields = {
       email: email,
       name: name,
-      locationId: locationId,
-      panelIds: panelIds,
-      applianceIds: applianceIds,
     };
 
     if (password) {
@@ -205,26 +163,10 @@ router.delete(`:id`, async (req, res) => {
         .json({ message: "User not found", success: false });
     }
 
-    const { applianceIds, locationId, panelIds } = user;
-
     await User.findByIdAndDelete(req.params.id);
 
-    if (applianceIds && applianceIds.length > 0) {
-      await Appliance.deleteMany({ _id: { $in: applianceIds } });
-    }
-
-    if (locationId) {
-      await Location.findByIdAndDelete(locationId);
-    }
-
-    if (panelIds && panelIds.length > 0) {
-      panelIds.map(async (id) => {
-        await Panel.findByIdAndDelete(id);
-      });
-    }
-
     return res.status(200).json({
-      message: "The user and associated references were deleted",
+      message: "The user was deleted",
       success: true,
     });
   } catch (error) {
