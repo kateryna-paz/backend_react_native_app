@@ -3,6 +3,8 @@ const router = express.Router();
 const { Appliance } = require("../models/appliance");
 const User = require("../models/user");
 
+const importanceValues = ["низька", "середня", "висока"];
+
 router.get("/", async (req, res) => {
   try {
     const appliances = await Appliance.find();
@@ -58,6 +60,11 @@ router.get("/:userId", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { name, power, importance, userId } = req.body;
+    if (!importanceValues.includes(importance)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid importance value" });
+    }
 
     const newAppliance = new Appliance({
       name,
@@ -78,6 +85,11 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { name, power, importance } = req.body;
+    if (!importanceValues.includes(importance)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid importance value" });
+    }
 
     const updatedAppliance = await Appliance.findByIdAndUpdate(
       req.params.id,

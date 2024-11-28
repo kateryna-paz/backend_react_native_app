@@ -49,7 +49,11 @@ router.post(`/`, async (req, res) => {
     const panel = new Panel({ square, number, typeId, userId });
     const createdPanel = await panel.save();
 
-    res.status(201).json(createdPanel);
+    const populatedPanel = await Panel.findById(createdPanel._id).populate(
+      "typeId"
+    );
+
+    res.status(201).json(populatedPanel);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -59,7 +63,7 @@ router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const panels = await Panel.find({ userId });
+    const panels = await Panel.find({ userId }).populate("typeId");
 
     if (!panels || panels.length === 0) {
       return res

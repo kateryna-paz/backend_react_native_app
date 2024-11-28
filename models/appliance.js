@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema, model, Types } = mongoose;
 
-importanceType = {
+const importanceType = {
   high: "висока",
   medium: "середня",
   low: "низька",
@@ -25,7 +25,7 @@ const applianceSchema = new Schema({
     type: String,
     enum: Object.values(importanceType),
     required: true,
-    default: importanceType.mediun,
+    default: importanceType.medium,
   },
   userId: {
     // Посилання на документ у колекції users

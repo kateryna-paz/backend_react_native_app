@@ -41,7 +41,7 @@ router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const location = await Location.findOne({ userId });
+    const location = await Location.findOne({ userId }).populate("regionId");
 
     if (!location) {
       return res
@@ -76,7 +76,11 @@ router.post("/", async (req, res) => {
     });
     const createdLocation = await location.save();
 
-    res.status(201).json(createdLocation);
+    const populatedLocation = await Location.findById(
+      createdLocation._id
+    ).populate("regionId");
+
+    res.status(201).json(populatedLocation);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -90,7 +94,7 @@ router.put("/:id", async (req, res) => {
       req.params.id,
       { regionId, coordinates, dailyEnergyProduced },
       { new: true }
-    ).populate("regionId userId");
+    ).populate("regionId");
 
     if (!updatedLocation) {
       return res
