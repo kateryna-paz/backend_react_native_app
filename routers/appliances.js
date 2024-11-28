@@ -37,7 +37,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.get("/:userId", async (req, res) => {
+router.get("/userId/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
