@@ -59,9 +59,9 @@ router.get("/userId/:userId", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { regionId, coordinates, dailyEnergyProduced, userId } = req.body;
+    const { regionName, coordinates, dailyEnergyProduced, userId } = req.body;
 
-    const region = await Region.findById(regionId);
+    const region = await Region.findOne({ name: regionName });
     if (!region) {
       return res
         .status(404)
@@ -69,7 +69,7 @@ router.post("/", async (req, res) => {
     }
 
     const location = new Location({
-      regionId,
+      regionId: region._id,
       coordinates,
       dailyEnergyProduced,
       userId,
@@ -88,11 +88,18 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const { regionId, coordinates, dailyEnergyProduced } = req.body;
+    const { regionName, coordinates, dailyEnergyProduced } = req.body;
+
+    const region = await Region.findOne({ name: regionName });
+    if (!region) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Invalid region" });
+    }
 
     const updatedLocation = await Location.findByIdAndUpdate(
       req.params.id,
-      { regionId, coordinates, dailyEnergyProduced },
+      { regionId: region._id, coordinates, dailyEnergyProduced },
       { new: true }
     ).populate("regionId");
 
