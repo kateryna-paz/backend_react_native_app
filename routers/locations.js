@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { Location } = require("../models/location");
 const { Region } = require("../models/region");
+const { User } = require("../models/user");
 
 router.get("/", async (req, res) => {
   try {
@@ -61,11 +62,23 @@ router.post("/", async (req, res) => {
   try {
     const { regionName, coordinates, dailyEnergyProduced, userId } = req.body;
 
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Invalid user" });
+    }
+
     const region = await Region.findOne({ name: regionName });
     if (!region) {
       return res
         .status(404)
         .json({ success: false, message: "Invalid region" });
+    }
+
+    const locationUser = await Location.findOne({ userId });
+    if (locationUser) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User already has a location" });
     }
 
     const location = new Location({
@@ -88,7 +101,12 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const { regionName, coordinates, dailyEnergyProduced } = req.body;
+    const { regionName, coordinates, dailyEnergyProduced, userId } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Invalid user" });
+    }
 
     const region = await Region.findOne({ name: regionName });
     if (!region) {
