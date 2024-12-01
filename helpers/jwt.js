@@ -14,8 +14,10 @@ function authJwt() {
     path: [
       `${api}/users/login`,
       `${api}/users/register`,
-      `${api}/panels`,
-      `${api}/locations`,
+      `${api}/users/email/:email`,
+      `${api}/users/email/:email`,
+      `${api}/panels/post`,
+      `${api}/locations/post`,
       `${api}/regions`,
       `${api}/paneltypes`,
     ],
