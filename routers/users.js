@@ -55,6 +55,26 @@ router.get(`/:id`, async (req, res) => {
     res.status(500).json({ error: error.message, success: false });
   }
 });
+
+router.get(`/email/:email`, async (req, res) => {
+  try {
+    if (!isEmailValid(email)) {
+      return res.status(400).json({ message: "Invalid email" });
+    }
+
+    const userInDB = await User.findOne({ email: req.params.email });
+
+    if (userInDB) {
+      return res
+        .status(503)
+        .json({ message: "The user with this email already exists" });
+    }
+    res.status(200).send(userInDB);
+  } catch (error) {
+    res.status(500).json({ error: error.message, success: false });
+  }
+});
+
 router.post(`/register`, async (req, res) => {
   const { name, email, password } = req.body;
 
