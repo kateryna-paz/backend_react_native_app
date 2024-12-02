@@ -58,18 +58,19 @@ router.get(`/:id`, async (req, res) => {
 
 router.get(`/email/:email`, async (req, res) => {
   try {
+    const email = req.params.email;
+
     if (!isEmailValid(email)) {
       return res.status(400).json({ message: "Invalid email" });
     }
 
-    const userInDB = await User.findOne({ email: req.params.email });
+    const userInDB = await User.findOne({ email }).select("-passwordHash");
 
-    if (userInDB) {
-      return res
-        .status(503)
-        .json({ message: "The user with this email already exists" });
+    if (!userInDB) {
+      return res.status(200).json({ message: "Email is available" });
     }
-    res.status(200).send(userInDB);
+
+    return res.status(200).send(userInDB);
   } catch (error) {
     res.status(500).json({ error: error.message, success: false });
   }
@@ -160,7 +161,7 @@ router.put(`/:id`, async (req, res) => {
       req.params.id,
       updateFields,
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!updateUser) {
       return res
