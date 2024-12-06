@@ -4,7 +4,7 @@ const { PanelType } = require("../models/panelType");
 
 router.get(`/`, async (req, res) => {
   try {
-    const panelTypeList = await PanelType.find().select("type");
+    const panelTypeList = await PanelType.find();
 
     if (!panelTypeList || panelTypeList.length === 0) {
       return res
