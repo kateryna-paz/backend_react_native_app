@@ -43,12 +43,6 @@ router.get("/userId/:userId", async (req, res) => {
 
     const appliances = await Appliance.find({ userId });
 
-    if (!appliances || appliances.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No appliances found for this user" });
-    }
-
     res.status(200).json(appliances);
   } catch (error) {
     res
