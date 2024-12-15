@@ -37,7 +37,7 @@ router.get(`/:id`, async (req, res) => {
 
 router.post(`/`, async (req, res) => {
   try {
-    const { square, number, typeId, userId } = req.body;
+    const { power, number, typeId, userId } = req.body;
 
     const type = await PanelType.findById(typeId);
     if (!type) {
@@ -46,7 +46,7 @@ router.post(`/`, async (req, res) => {
         .json({ success: false, message: "Invalid panel type" });
     }
 
-    const panel = new Panel({ square, number, typeId, userId });
+    const panel = new Panel({ power, number, typeId, userId });
     const createdPanel = await panel.save();
 
     const populatedPanel = await Panel.findById(createdPanel._id).populate(
@@ -81,11 +81,11 @@ router.get("/userId/:userId", async (req, res) => {
 
 router.put(`/:id`, async (req, res) => {
   try {
-    const { square, number, typeId } = req.body;
+    const { power, number, typeId } = req.body;
 
     const updatedPanel = await Panel.findByIdAndUpdate(
       req.params.id,
-      { square, number, typeId },
+      { power, number, typeId },
       { new: true }
     ).populate("typeId");
 
