@@ -44,7 +44,7 @@ router.get("/userId/:userId", async (req, res) => {
 
     const location = await Location.findOne({ userId }).populate("regionId");
 
-    if (location) {
+    if (!location) {
       return res
         .status(200)
         .json({ message: "No location found for this user" });
