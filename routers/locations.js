@@ -44,10 +44,10 @@ router.get("/userId/:userId", async (req, res) => {
 
     const location = await Location.findOne({ userId }).populate("regionId");
 
-    if (!location) {
+    if (location) {
       return res
-        .status(404)
-        .json({ success: false, message: "No location found for this user" });
+        .status(200)
+        .json({ message: "No location found for this user" });
     }
 
     res.status(200).json(location);
