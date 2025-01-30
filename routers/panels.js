@@ -2,48 +2,43 @@ const express = require("express");
 const router = express.Router();
 const { Panel } = require("../models/panel");
 const { PanelType } = require("../models/panelType");
+const { AppError, ERROR_TYPES } = require("../helpers/error-handler");
 
-router.get(`/`, async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const panelList = await Panel.find().populate("typeId");
 
-    if (!panelList || panelList.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Panels not found" });
+    if (!panelList.length) {
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Панелі не знайдено");
     }
 
     res.status(200).json(panelList);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.get(`/:id`, async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   try {
     const panel = await Panel.findById(req.params.id).populate("typeId");
 
     if (!panel) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Panel not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Панель не знайдено");
     }
 
     res.status(200).json(panel);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.post(`/`, async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const { power, number, typeId, userId } = req.body;
 
     const type = await PanelType.findById(typeId);
     if (!type) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Invalid panel type" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Невірний тип панелі");
     }
 
     const panel = new Panel({ power, number, typeId, userId });
@@ -55,31 +50,29 @@ router.post(`/`, async (req, res) => {
 
     res.status(201).json(populatedPanel);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.get("/userId/:userId", async (req, res) => {
+router.get("/userId/:userId", async (req, res, next) => {
   try {
     const { userId } = req.params;
 
     const panels = await Panel.find({ userId }).populate("typeId");
 
-    if (!panels || panels.length === 0) {
+    if (!panels.length) {
       return res
-        .status(404)
-        .json({ success: false, message: "No panels found for this user" });
+        .status(200)
+        .json({ message: "Для цього користувача немає панелей" });
     }
 
     res.status(200).json(panels);
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 });
 
-router.put(`/:id`, async (req, res) => {
+router.put("/:id", async (req, res, next) => {
   try {
     const { power, number, typeId } = req.body;
 
@@ -90,30 +83,26 @@ router.put(`/:id`, async (req, res) => {
     ).populate("typeId");
 
     if (!updatedPanel) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Panel not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Панель не знайдено");
     }
 
     res.status(200).json(updatedPanel);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.delete(`/:id`, async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
   try {
     const panel = await Panel.findByIdAndDelete(req.params.id);
 
     if (!panel) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Panel not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Панель не знайдено");
     }
 
-    res.status(200).json({ success: true, message: "The panel was deleted" });
+    res.status(200).json({ success: true, message: "Панель видалено" });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 

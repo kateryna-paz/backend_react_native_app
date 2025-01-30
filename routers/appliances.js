@@ -1,63 +1,78 @@
 const express = require("express");
 const router = express.Router();
 const { Appliance } = require("../models/appliance");
-const User = require("../models/user");
+const { AppError, ERROR_TYPES } = require("../helpers/error-handler");
+const { User } = require("../models/user");
 
 const importanceValues = ["низька", "середня", "висока"];
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const appliances = await Appliance.find();
     if (!appliances.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No appliances found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Прилади не знайдено");
     }
     res.status(200).json(appliances);
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   try {
     const appliance = await Appliance.findById(req.params.id);
     if (!appliance) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Appliance not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Прилад не знайдено");
     }
     res.status(200).json(appliance);
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 });
 
-router.get("/userId/:userId", async (req, res) => {
+router.get("/userId/:userId", async (req, res, next) => {
   try {
     const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError(
+        ERROR_TYPES.NOT_FOUND,
+        "Користувача з таким id не знайдено"
+      );
+    }
 
     const appliances = await Appliance.find({ userId });
 
     res.status(200).json(appliances);
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const { name, power, importance, userId } = req.body;
+    if (!name || !power || !importance || !userId) {
+      throw new AppError(
+        ERROR_TYPES.VALIDATION_ERROR,
+        "Відсутні обов'язкові поля"
+      );
+    }
+
     if (!importanceValues.includes(importance)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid importance value" });
+      throw new AppError(
+        ERROR_TYPES.VALIDATION_ERROR,
+        "Невірне значення важливості приладу"
+      );
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError(
+        ERROR_TYPES.NOT_FOUND,
+        "Користувача з таким id не знайдено"
+      );
     }
 
     const newAppliance = new Appliance({
@@ -70,19 +85,18 @@ router.post("/", async (req, res) => {
     const savedAppliance = await newAppliance.save();
     res.status(201).json(savedAppliance);
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res, next) => {
   try {
     const { name, power, importance } = req.body;
-    if (!importanceValues.includes(importance)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid importance value" });
+    if (importance && !importanceValues.includes(importance)) {
+      throw new AppError(
+        ERROR_TYPES.VALIDATION_ERROR,
+        "Невірне значення важливості приладу"
+      );
     }
 
     const updatedAppliance = await Appliance.findByIdAndUpdate(
@@ -92,28 +106,22 @@ router.put("/:id", async (req, res) => {
     );
 
     if (!updatedAppliance) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Appliance not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Прилад не знайдено");
     }
 
     res.status(200).json(updatedAppliance);
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 });
 
-router.delete(`/:id`, async (req, res) => {
+router.delete(`/:id`, async (req, res, next) => {
   const applianceId = req.params.id;
   try {
     const appliance = await Appliance.findByIdAndDelete(applianceId);
 
     if (!appliance) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Appliance not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Прилад не знайдено");
     }
 
     return res.status(200).json({
@@ -121,7 +129,7 @@ router.delete(`/:id`, async (req, res) => {
       message: "The appliance was removed",
     });
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 

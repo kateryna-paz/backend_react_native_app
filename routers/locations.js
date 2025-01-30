@@ -3,42 +3,39 @@ const router = express.Router();
 const { Location } = require("../models/location");
 const { Region } = require("../models/region");
 const { User } = require("../models/user");
+const { AppError, ERROR_TYPES } = require("../helpers/error-handler");
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const locationList = await Location.find().populate("regionId");
 
     if (!locationList.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Locations not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Локації не знайдено");
     }
 
     res.status(200).json(locationList);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   try {
     const location = await Location.findById(req.params.id).populate(
       "regionId"
     );
 
     if (!location) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Location not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Локацію не знайдено");
     }
 
     res.status(200).json(location);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.get("/userId/:userId", async (req, res) => {
+router.get("/userId/:userId", async (req, res, next) => {
   try {
     const { userId } = req.params;
 
@@ -47,7 +44,7 @@ router.get("/userId/:userId", async (req, res) => {
     if (!location) {
       return res
         .status(200)
-        .json({ message: "No location found for this user" });
+        .json({ message: "Для цього користувача немає локації" });
     }
 
     res.status(200).json(location);
@@ -58,27 +55,26 @@ router.get("/userId/:userId", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const { regionName, coordinates, dailyEnergyProduced, userId } = req.body;
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "Invalid user" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Користувача не знайдено");
     }
 
     const region = await Region.findOne({ name: regionName });
     if (!region) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Invalid region" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Регіон не знайдено");
     }
 
     const locationUser = await Location.findOne({ userId });
     if (locationUser) {
-      return res
-        .status(400)
-        .json({ success: false, message: "User already has a location" });
+      throw new AppError(
+        ERROR_TYPES.DUPLICATE_ERROR,
+        "Користувач вже має локацію"
+      );
     }
 
     const location = new Location({
@@ -95,24 +91,22 @@ router.post("/", async (req, res) => {
 
     res.status(201).json(populatedLocation);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res, next) => {
   try {
     const { regionName, coordinates, dailyEnergyProduced, userId } = req.body;
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "Invalid user" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Користувача не знайдено");
     }
 
     const region = await Region.findOne({ name: regionName });
     if (!region) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Invalid region" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Регіон не знайдено");
     }
 
     const updatedLocation = await Location.findByIdAndUpdate(
@@ -122,32 +116,28 @@ router.put("/:id", async (req, res) => {
     ).populate("regionId");
 
     if (!updatedLocation) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Location not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Локацію не знайдено");
     }
 
     res.status(200).json(updatedLocation);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
   try {
     const deletedLocation = await Location.findByIdAndDelete(req.params.id);
 
     if (!deletedLocation) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Location not found" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Локацію не знайдено");
     }
 
     res
       .status(200)
       .json({ success: true, message: "The location was deleted" });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 

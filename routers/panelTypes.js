@@ -1,34 +1,33 @@
 const express = require("express");
 const router = express.Router();
 const { PanelType } = require("../models/panelType");
+const { AppError, ERROR_TYPES } = require("../helpers/error-handler");
 
-router.get(`/`, async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const panelTypeList = await PanelType.find();
 
-    if (!panelTypeList || panelTypeList.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Panel Types not found", success: false });
+    if (!panelTypeList.length) {
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Типи панелей не знайдено");
     }
-    res.send(panelTypeList);
+
+    res.status(200).json(panelTypeList);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
-router.get(`/:id`, async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   try {
     const panelType = await PanelType.findById(req.params.id);
 
     if (!panelType) {
-      return res
-        .status(404)
-        .json({ message: "Panel Types not found", success: false });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Тип панелі не знайдено");
     }
-    res.send(panelType);
+
+    res.status(200).json(panelType);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 

@@ -6,89 +6,80 @@ const { Panel } = require("../models/panel");
 const { Appliance } = require("../models/appliance");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
-var emailRegex =
-  /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
-
-function isEmailValid(email) {
-  if (!email || email.length > 254) return false;
-  if (!emailRegex.test(email)) return false;
-
-  const [local, domain] = email.split("@");
-  if (local.length > 64 || domain.split(".").some((part) => part.length > 63))
-    return false;
-
-  return true;
-}
+const { AppError, ERROR_TYPES } = require("../helpers/error-handler");
+const { isEmailValid } = require("../utils/validation");
 
 const secretOrPrivateKey = process.env.JWT_SECRET;
 if (!secretOrPrivateKey) {
   throw new Error("JWT secret is missing or invalid");
 }
 
-router.get(`/`, async (req, res) => {
+router.get(`/`, async (req, res, next) => {
   try {
     const userList = await User.find().select("-passwordHash");
 
-    if (!userList || userList.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Users not found", success: false });
+    if (!users.length) {
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Користувачі не знайдені");
     }
     res.status(200).send(userList);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
-router.get(`/:id`, async (req, res) => {
+router.get(`/:id`, async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).select("-passwordHash");
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User not found", success: false });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Користувач не знайдений");
     }
     res.status(200).send(user);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
-router.get(`/email/:email`, async (req, res) => {
+router.get(`/email/:email`, async (req, res, next) => {
   try {
     const email = req.params.email;
 
     if (!isEmailValid(email)) {
-      return res.status(400).json({ message: "Invalid email" });
+      throw new AppError(
+        ERROR_TYPES.VALIDATION_ERROR,
+        "Електронна пошта невірна"
+      );
     }
 
     const userInDB = await User.findOne({ email }).select("-passwordHash");
 
     if (!userInDB) {
-      return res.status(200).json({ message: "Email is available" });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Користувач не знайдений");
     }
 
     return res.status(200).send(userInDB);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
-router.post(`/register`, async (req, res) => {
+router.post(`/register`, async (req, res, next) => {
   const { name, email, password } = req.body;
 
   if (!isEmailValid(email)) {
-    return res.status(400).json({ message: "Invalid email" });
+    throw new AppError(
+      ERROR_TYPES.VALIDATION_ERROR,
+      "Електронна пошта невірна"
+    );
   }
 
   try {
     const userInDB = await User.findOne({ email: email });
     if (userInDB) {
-      return res
-        .status(500)
-        .json({ message: "The user with this email already exists" });
+      throw new AppError(
+        ERROR_TYPES.DUPLICATE_ERROR,
+        "Користувач з такою електронною поштою вже існує"
+      );
     }
 
     const saltRounds = 10;
@@ -112,38 +103,45 @@ router.post(`/register`, async (req, res) => {
       user: createdUser,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+router.post("/login", async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
 
-  if (!isEmailValid(email)) {
-    return res.status(400).json({ message: "Invalid email" });
-  }
+    if (!isEmailValid(email)) {
+      throw new AppError(
+        ERROR_TYPES.VALIDATION_ERROR,
+        "Електронна пошта невірна"
+      );
+    }
 
-  const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email: email });
 
-  if (!user) {
-    return res.status(404).send("The user not found");
-  }
+    if (!user) {
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Користувач не знайдений");
+    }
 
-  if (user && bcrypt.compareSync(password, user.passwordHash)) {
-    const token = jwt.sign({ usedId: user.id }, secretOrPrivateKey, {
-      expiresIn: "7d",
-    });
-    return res.status(200).json({
-      message: "Authentication successful",
-      token: token,
-      user: user,
-    });
-  } else {
-    return res.status(400).send("Incorrect password");
+    if (user && bcrypt.compareSync(password, user.passwordHash)) {
+      const token = jwt.sign({ usedId: user.id }, secretOrPrivateKey, {
+        expiresIn: "7d",
+      });
+      return res.status(200).json({
+        message: "Authentication successful",
+        token: token,
+        user: user,
+      });
+    } else {
+      throw new AppError(ERROR_TYPES.VALIDATION_ERROR, "Пароль невірний");
+    }
+  } catch (error) {
+    next(error);
   }
 });
 
-router.put(`/:id`, async (req, res) => {
+router.put(`/:id`, async (req, res, next) => {
   const { name, email, password } = req.body;
 
   try {
@@ -164,24 +162,20 @@ router.put(`/:id`, async (req, res) => {
     ).select("-passwordHash");
 
     if (!updateUser) {
-      return res
-        .status(404)
-        .json({ message: "User not found", success: false });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Користувач не знайдений");
     }
     res.status(200).send(updateUser);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
-router.delete(`:id`, async (req, res) => {
+router.delete(`:id`, async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User not found", success: false });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Користувач не знайдений");
     }
 
     await User.findByIdAndDelete(req.params.id);
@@ -191,7 +185,7 @@ router.delete(`:id`, async (req, res) => {
       success: true,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 

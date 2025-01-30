@@ -1,49 +1,44 @@
 const express = require("express");
 const router = express.Router();
 const { Region } = require("../models/region");
+const { AppError, ERROR_TYPES } = require("../helpers/error-handler");
 
-router.get(`/`, async (req, res) => {
+router.get(`/`, async (req, res, next) => {
   try {
     const regionList = await Region.find();
 
-    if (!regionList || regionList.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Panel Types not found", success: false });
+    if (!regionList.length) {
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Жодної області не знайдено");
     }
     res.send(regionList);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
-router.get(`/names`, async (req, res) => {
+router.get(`/names`, async (req, res, next) => {
   try {
     const regionList = await Region.find().select("name");
 
     if (!regionList || regionList.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Panel Types not found", success: false });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Жодної області не знайдено");
     }
     res.send(regionList);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
-router.get(`/:id`, async (req, res) => {
+router.get(`/:id`, async (req, res, next) => {
   try {
     const region = await Region.findById(req.params.id);
 
     if (!region) {
-      return res
-        .status(404)
-        .json({ message: "Panel Types not found", success: false });
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Область не знайдена");
     }
     res.send(region);
   } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
+    next(error);
   }
 });
 
