@@ -8,10 +8,6 @@ router.get("/", async (req, res, next) => {
   try {
     const panelList = await Panel.find().populate("typeId");
 
-    if (!panelList.length) {
-      throw new AppError(ERROR_TYPES.NOT_FOUND, "Панелі не знайдено");
-    }
-
     res.status(200).json(panelList);
   } catch (error) {
     next(error);
