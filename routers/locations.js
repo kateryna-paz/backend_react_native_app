@@ -114,7 +114,7 @@ router.put("/:id", async (req, res, next) => {
       {
         regionId: region._id,
         coordinates,
-        $push: { dailyEnergyProduced },
+        dailyEnergyProduced,
       },
       { new: true }
     ).populate("regionId");
