@@ -111,7 +111,11 @@ router.put("/:id", async (req, res, next) => {
 
     const updatedLocation = await Location.findByIdAndUpdate(
       req.params.id,
-      { regionId: region._id, coordinates, dailyEnergyProduced },
+      {
+        regionId: region._id,
+        coordinates,
+        $push: { dailyEnergyProduced },
+      },
       { new: true }
     ).populate("regionId");
 
