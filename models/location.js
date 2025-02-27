@@ -34,6 +34,22 @@ const locationSchema = new Schema({
           min: [0, "Вироблена енергія повинна бути більша за 0"], // Вироблена енергія у Вт
           required: true,
         },
+        hourlyEnergy: {
+          type: [
+            {
+              cloudiness: { type: Number, min: 0, max: 100, required: true },
+              energy: {
+                type: Schema.Types.Mixed,
+                required: true,
+                validate: {
+                  validator: (value) => !isNaN(parseFloat(value)),
+                  message: "Енергія повинна бути числом або числовим рядком",
+                },
+              },
+              interval: { type: String, required: true },
+            },
+          ],
+        },
       },
     ],
     default: [],
