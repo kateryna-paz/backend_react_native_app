@@ -63,7 +63,7 @@ router.post("/", async (req, res, next) => {
     if (!importanceValues.includes(importance)) {
       throw new AppError(
         ERROR_TYPES.VALIDATION_ERROR,
-        "Невірне значення важливості приладу"
+        "Невірне значення пріоритету приладу"
       );
     }
 
@@ -95,7 +95,7 @@ router.put("/:id", async (req, res, next) => {
     if (importance && !importanceValues.includes(importance)) {
       throw new AppError(
         ERROR_TYPES.VALIDATION_ERROR,
-        "Невірне значення важливості приладу"
+        "Невірне значення пріоритету приладу"
       );
     }
 

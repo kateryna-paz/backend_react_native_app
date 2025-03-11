@@ -38,6 +38,7 @@ const locationSchema = new Schema({
           type: [
             {
               cloudiness: { type: Number, min: 0, max: 100, required: true },
+              temp: { type: Number, min: -1000, max: 100, required: true },
               energy: {
                 type: Schema.Types.Mixed,
                 required: true,
