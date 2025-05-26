@@ -129,6 +129,113 @@ router.put("/:id", async (req, res, next) => {
   }
 });
 
+router.patch("/:id/daily-energy", async (req, res, next) => {
+  try {
+    const { operation, date, newEntry, newData } = req.body;
+    const locationId = req.params.id;
+
+    const location = await Location.findById(locationId);
+    if (!location) {
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Локацію не знайдено");
+    }
+
+    let updateQuery = {};
+    let updatedLocation;
+
+    switch (operation) {
+      case "add":
+        if (!newEntry) {
+          throw new AppError(
+            ERROR_TYPES.VALIDATION_ERROR,
+            "Потрібен параметр newEntry"
+          );
+        }
+
+        updateQuery = {
+          $push: {
+            dailyEnergyProduced: {
+              ...newEntry,
+              _id: new mongoose.Types.ObjectId(),
+            },
+          },
+        };
+        break;
+
+      case "update":
+        if (!newData || !date) {
+          throw new AppError(
+            ERROR_TYPES.VALIDATION_ERROR,
+            "Потрібні параметри newData та date"
+          );
+        }
+
+        const today = date || new Date().toLocaleDateString("en-CA");
+
+        await Location.updateOne(
+          { _id: locationId },
+          {
+            $pull: {
+              dailyEnergyProduced: {
+                date: { $regex: `^${today}` },
+              },
+            },
+          }
+        );
+
+        updateQuery = {
+          $push: {
+            dailyEnergyProduced: {
+              ...newData,
+              _id: new mongoose.Types.ObjectId(),
+            },
+          },
+        };
+        break;
+
+      case "remove":
+        if (!date) {
+          throw new AppError(
+            ERROR_TYPES.VALIDATION_ERROR,
+            "Потрібен параметр date"
+          );
+        }
+
+        const dateToRemove = date || new Date().toLocaleDateString("en-CA");
+        updateQuery = {
+          $pull: {
+            dailyEnergyProduced: {
+              date: { $regex: `^${dateToRemove}` },
+            },
+          },
+        };
+        break;
+
+      default:
+        throw new AppError(
+          ERROR_TYPES.VALIDATION_ERROR,
+          "Невідома операція. Використовуйте: add, update, remove"
+        );
+    }
+
+    updatedLocation = await Location.findByIdAndUpdate(
+      locationId,
+      updateQuery,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate("regionId");
+
+    if (!updatedLocation) {
+      throw new AppError(ERROR_TYPES.NOT_FOUND, "Не вдалося оновити локацію");
+    }
+
+    res.status(200).json(updatedLocation);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.delete("/:id", async (req, res, next) => {
   try {
     const deletedLocation = await Location.findByIdAndDelete(req.params.id);
