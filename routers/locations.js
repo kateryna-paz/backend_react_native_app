@@ -151,12 +151,20 @@ router.patch("/:id/daily-energy", async (req, res, next) => {
           );
         }
 
+        if (
+          !newEntry.date ||
+          !newEntry.energy ||
+          !Array.isArray(newEntry.hourlyEnergy)
+        ) {
+          throw new AppError(
+            ERROR_TYPES.VALIDATION_ERROR,
+            "newEntry повинен містити date, energy та hourlyEnergy"
+          );
+        }
+
         updateQuery = {
           $push: {
-            dailyEnergyProduced: {
-              ...newEntry,
-              _id: new mongoose.Types.ObjectId(),
-            },
+            dailyEnergyProduced: newEntry,
           },
         };
         break;
@@ -184,10 +192,7 @@ router.patch("/:id/daily-energy", async (req, res, next) => {
 
         updateQuery = {
           $push: {
-            dailyEnergyProduced: {
-              ...newData,
-              _id: new mongoose.Types.ObjectId(),
-            },
+            dailyEnergyProduced: newData,
           },
         };
         break;
