@@ -132,29 +132,19 @@ router.put("/:id", async (req, res, next) => {
 
 router.patch("/:id/daily-energy", async (req, res, next) => {
   try {
-    console.log("=== DAILY ENERGY UPDATE START ===");
-    console.log("Request body:", JSON.stringify(req.body, null, 2));
-    console.log("Location ID:", req.params.id);
-
     const { operation, date, newEntry, newData } = req.body;
     const locationId = req.params.id;
 
-    console.log("Step 1: Finding location...");
     const location = await Location.findById(locationId);
     if (!location) {
-      console.log("ERROR: Location not found");
       throw new AppError(ERROR_TYPES.NOT_FOUND, "Локацію не знайдено");
     }
-    console.log("Step 1 ✓: Location found");
 
     let updateQuery = {};
     let updatedLocation;
 
-    console.log("Step 2: Processing operation:", operation);
-
     switch (operation) {
       case "add":
-        console.log("Processing ADD operation...");
         if (!newEntry) {
           throw new AppError(
             ERROR_TYPES.VALIDATION_ERROR,
@@ -181,7 +171,6 @@ router.patch("/:id/daily-energy", async (req, res, next) => {
         break;
 
       case "update":
-        console.log("Processing UPDATE operation...");
         if (!newData || !date) {
           throw new AppError(
             ERROR_TYPES.VALIDATION_ERROR,
@@ -213,7 +202,6 @@ router.patch("/:id/daily-energy", async (req, res, next) => {
         break;
 
       case "remove":
-        console.log("Processing REMOVE operation...");
         if (!date) {
           throw new AppError(
             ERROR_TYPES.VALIDATION_ERROR,
@@ -242,7 +230,6 @@ router.patch("/:id/daily-energy", async (req, res, next) => {
         );
     }
 
-    console.log("Step 3: Executing database update...");
     updatedLocation = await Location.findByIdAndUpdate(
       locationId,
       updateQuery,
@@ -255,7 +242,6 @@ router.patch("/:id/daily-energy", async (req, res, next) => {
     if (!updatedLocation) {
       throw new AppError(ERROR_TYPES.NOT_FOUND, "Не вдалося оновити локацію");
     }
-    console.log("=== DAILY ENERGY UPDATE SUCCESS ===");
 
     res.status(200).json(updatedLocation);
   } catch (error) {
